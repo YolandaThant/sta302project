@@ -2,7 +2,129 @@
 Title: "-"
 Author: "-"
 ---
+```{r setup, include=FALSE}
+## Hides both code & output in knitted document 
+library(tidyverse)
+library(patchwork)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)  ## Globally suppress all code, messages, & warnings
+```
 
 ```{r}
-print("Pastel Pink, Pastel Purple, Lime Green, Baby Blue")
+## load diamonds dataset
+diamonds <- read_csv("./dataset/original_diamonds_dataset.csv")
+## list.files("./dataset") 
+## getwd()
+```
+
+```{r}
+## Data Cleaning: Remove predictor variables we don't need: 1st col, cut, depth, y, z
+diamonds_cleaned <- diamonds %>% select(-...1, -cut, -depth, -y, -z)
+## head(diamonds_cleaned)
+write_csv(diamonds_cleaned, "./dataset/diamonds_cleaned.csv")
+```
+
+```{r}
+## Preliminary (MLR) Model 
+fit <- lm(price ~ carat + color + clarity + table + x, data=diamonds_cleaned)
+```
+### 1. Regression Model Assumptions: Linearity & Constant Error Variance (Homoscedasticity)
+
+#### 1(a) Residual vs Fitted Values Plot
+```{r}
+## 1(a) Residual vs Fitted | NOTE: Best plot among the 3 to check for these 2 assumptions
+## BASE R
+## base_r_resid_fitted <- plot(fit, which = 1)  # Residuals vs Fitted
+
+resid_fit <- data.frame(Fitted = fitted(fit), Residuals = resid(fit))
+resid_fitted <- ggplot(data=resid_fit, aes(x=Fitted, y=Residuals)) +
+  geom_point(alpha=0.4) +  ## Transparency level to help w/ overlapping pts
+  geom_smooth(method = "loess", se = FALSE, color = "pink") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  labs(x="Fitted Values", y="Residuals",
+       title="Residuals vs Fitted Values")
+```
+
+#### 1(b) Response vs Fitted Values Plot
+Mention the method used for the smoother (LOESS) in the analysis.
+
+If the LOESS curve is not flat, it suggests non-linearity, which may mean the linear model is misspecified or missing interaction/polynomial terms.
+```{r}
+price_fitted <- ggplot(data=diamonds_cleaned, aes(x=fitted(fit), y=price)) +
+  geom_point(alpha=0.3) +  ## Transparency level to help w/ overlapping pts
+  geom_abline(color="red") +
+  labs(x="Fitted Values", y="Actual Price",
+       title="Price vs Fitted Values")
+```
+
+#### 1(c) Response vs Predictors Plot
+```{r}
+## predictors <- c("carat", "color", "clarity", "table", "x")
+
+## price_predictors <- 
+##   for (x_i in predictors) {
+##   print(
+##     ggplot(data=diamonds_cleaned, aes(x=!!sym(x_i), y=price)) +
+##       geom_point(alpha=0.2) +
+##       geom_smooth(method="lm", color="blue", se = FALSE) +
+##       labs(title=paste("Price vs", x_i))
+##   )
+## }
+## !!sym(x_i): Converts str var name into a symbol & unquotes it for aes() to use it directly.
+
+price_carat <- ggplot(data=diamonds_cleaned, aes(x=carat, y=price)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Carat")
+
+price_color <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Color")
+
+price_clarity <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Clarity")
+
+price_table <- ggplot(data=diamonds_cleaned, aes(x=table, y=price)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Table")
+
+price_x <- ggplot(data=diamonds_cleaned, aes(x=x, y=price)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs x")
+```
+### 2. Normality of the Errors (Model Fit) Assumption: Histogram & Normal QQ-Plot
+
+#### 2(a) Histogram of Standardized Residuals
+```{r}
+## BASE R
+## sresidual_values <- rstandard(fit)
+## base_r_sresid_hist <- hist(sresidual_values, xlab="Standardized Residuals", 
+                           ## main="Standardized Residuals Histogram")
+
+std_resid <- rstandard(fit)
+sresid_hist <- ggplot(data=data.frame(std_resid), aes(x=std_resid)) +
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of Standardized Residuals",
+       x="Standardized Residuals", y="Frequency")
+```
+
+#### 2(b) Normal QQ-Plot of Standardized Residuals
+```{r}
+## BASE R
+## plot(fit, which=2)
+
+sresid_qq <- ggplot(data=data.frame(std_resid), aes(sample=std_resid)) +
+  stat_qq(alpha=0.2) +
+  stat_qq_line(color="red", linetype="dashed") +
+  labs(title="Normal QQ-Plot of Standardized Residuals")
+```
+
+```{r, fig.width=15, fig.height=16}
+(resid_fitted | price_fitted | price_carat) / 
+  (price_color | price_clarity | price_table) / 
+  (price_x | sresid_hist | sresid_qq)
 ```
