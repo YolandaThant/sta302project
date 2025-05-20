@@ -192,3 +192,4 @@ Moreover, a 1-gram increase in **carat**—with the same values as the previous 
 Interestingly, **table** and **x** are both negatively associated with **price**, with coefficients of −\$32.71 and −\$900.27, respectively. This is counterintuitive as larger dimensions are generally more desirable. **x** likely reflects multicollinearity with **carat**, since both capture size-related information. This redundancy suggests the need to reconsider variable inclusion—possibility removing **x** or replacing with a composite variable like volume.
 
 ## Bibliography
+
