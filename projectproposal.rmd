@@ -8,8 +8,9 @@ date: "May 15, 2025"
 ---
 ```{r setup, include=FALSE}
 ## Hides both code & output in knitted document 
-library(tidyverse)
+library(tidyverse)  ## For data wrangling & plotting
 library(patchwork)
+library(knitr)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)  ## Globally suppress all code, messages, & warnings
 ```
 
@@ -42,28 +43,28 @@ fit <- lm(price ~ carat + color + clarity + table + x, data=diamonds_cleaned)
 ```
 
 ```{r}
-## 1(a) Residual vs Fitted | NOTE: Best plot among the 3 to check for these 2 assumptions
-## BASE R
-## base_r_resid_fitted <- plot(fit, which = 1)  # Residuals vs Fitted
-
+## 1(a) Residual vs Fitted Values Plot | NOTE: Best plot among the 3 1(a)(b)(c) to check for 1st 2 assumptions
 resid_fit <- data.frame(Fitted = fitted(fit), Residuals = resid(fit))
 resid_fitted <- ggplot(data=resid_fit, aes(x=Fitted, y=Residuals)) +
   geom_point(alpha=0.4) +  ## Transparency level to help w/ overlapping pts
-  geom_smooth(method = "loess", se = FALSE, color = "pink") +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   labs(x="Fitted Values", y="Residuals",
        title="Residuals vs Fitted Values")
 ```
 
 ```{r}
+## 1(b) Response vs Fitted Values Plot
 price_fitted <- ggplot(data=diamonds_cleaned, aes(x=fitted(fit), y=price)) +
   geom_point(alpha=0.3) +  ## Transparency level to help w/ overlapping pts
-  geom_abline(color="red") +
+  geom_abline(color="blue") +
   labs(x="Fitted Values", y="Actual Price",
        title="Price vs Fitted Values")
 ```
 
 ```{r}
+## 1(b) Response vs Predictor Values Plot
+
 ## predictors <- c("carat", "color", "clarity", "table", "x")
 
 ## price_predictors <- 
@@ -87,10 +88,24 @@ price_color <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
   geom_smooth(method="lm", color="blue", se=FALSE) +
   labs(title="Price vs Color")
 
+## Boxplot helps confirm that color is not constant & shows some variation in price.
+## Can use as predictor in modeling price.
+price_color_boxplot <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
+  geom_boxplot(fill="lightblue", color="black") +
+  labs(title="Boxplot of Price by Color",
+       x="Color", y="Price")
+
 price_clarity <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
   geom_point(alpha=0.2) +
   geom_smooth(method="lm", color="blue", se=FALSE) +
   labs(title="Price vs Clarity")
+
+## Boxplot confirms that clarity does is not constant & shows meaningful variation in price.
+## Can use as predictor in modeling price.
+price_clarity_boxplot <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
+  geom_boxplot(fill="lightblue", color="black") +
+  labs(title="Boxplot of Price by Clarity",
+       x="Clarity", y="Price")
 
 price_table <- ggplot(data=diamonds_cleaned, aes(x=table, y=price)) +
   geom_point(alpha=0.2) +
@@ -104,11 +119,7 @@ price_x <- ggplot(data=diamonds_cleaned, aes(x=x, y=price)) +
 ```
 
 ```{r}
-## BASE R
-## sresidual_values <- rstandard(fit)
-## base_r_sresid_hist <- hist(sresidual_values, xlab="Standardized Residuals", 
-                           ## main="Standardized Residuals Histogram")
-
+## 2(a) Histogram of Standardized Residuals
 std_resid <- rstandard(fit)
 sresid_hist <- ggplot(data=data.frame(std_resid), aes(x=std_resid)) +
   geom_histogram(bins=30, fill="lightblue", color="black") +
@@ -117,36 +128,67 @@ sresid_hist <- ggplot(data=data.frame(std_resid), aes(x=std_resid)) +
 ```
 
 ```{r}
-## BASE R
-## plot(fit, which=2)
-
+## Normal QQ-Plot of Standardized Residuals
 sresid_qq <- ggplot(data=data.frame(std_resid), aes(sample=std_resid)) +
   stat_qq(alpha=0.2) +
   stat_qq_line(color="red", linetype="dashed") +
-  labs(title="Normal QQ-Plot of Standardized Residuals")
+  labs(title="Normal QQ-Plot of Standardized Residuals", 
+       x="Theoretical Quantiles", y="Standardized Residuals")
 ```
 
-```{r, fig.width=15, fig.height=16}
+```{r, fig.width=15, fig.height=20}
 (resid_fitted | price_fitted | price_carat) / 
-  (price_color | price_clarity | price_table) / 
-  (price_x | sresid_hist | sresid_qq)
+  (price_color | price_color_boxplot) / 
+  (price_clarity | price_clarity_boxplot) / 
+  (price_table | price_x) / 
+  (sresid_hist | sresid_qq)
 ```
 
 ## Preliminary Model Results
-To investigate how the carat—price relationship varies across different diamond clarity levels after adjusting for color, table size, and x-dimension (length), we fit a Multiple Linear Regression model: 
-**price ~ carat + color + clarity + table + x**. 
+\begin{align*}
+y =\ & \beta_0 + \beta_1 \cdot \text{carat} + \beta_2 \cdot I(\text{color} = E) + \beta_3 \cdot I(\text{color} = F) + \beta_4 \cdot I(\text{color} = G) + \beta_5 \cdot I(\text{color} = H) \\
+& + \beta_6 \cdot I(\text{color} = I) + \beta_7 \cdot I(\text{color} = J) + \beta_8 \cdot I(\text{clarity} = \text{IF}) + \beta_9 \cdot I(\text{clarity} = \text{SI1}) \\
+& + \beta_{10} \cdot I(\text{clarity} = \text{SI2}) + \beta_{11} \cdot I(\text{clarity} = \text{VS1}) + \beta_{12} \cdot I(\text{clarity} = \text{VS2}) \\
+& + \beta_{13} \cdot I(\text{clarity} = \text{VVS1}) + \beta_{14} \cdot I(\text{clarity} = \text{VVS2}) + \beta_{15} \cdot \text{table} + \beta_{16} \cdot x + \epsilon \\[0.5em]
+\text{} & \text{Assume } \mathbb{E}[\epsilon] = 0, \mathbb{V}[\epsilon] = \sigma^2, \text{and } \epsilon \overset{\text{i.i.d.}}{\sim} N(0, \sigma^2) \\[0.5em]
+\hat{E}[y] =\ & \hat{y} =\ \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{carat} + \hat{\beta}_2 \cdot I(\text{color} = E) + \hat{\beta}_3 \cdot I(\text{color} = F) + \hat{\beta}_4 \cdot I(\text{color} = G) + \hat{\beta}_5 \cdot I(\text{color} = H) \\
+& + \hat{\beta}_6 \cdot I(\text{color} = I) + \hat{\beta}_7 \cdot I(\text{color} = J) + \hat{\beta}_8 \cdot I(\text{clarity} = \text{IF}) + \hat{\beta}_9 \cdot I(\text{clarity} = \text{SI1}) \\
+& + \hat{\beta}_{10} \cdot I(\text{clarity} = \text{SI2}) + \hat{\beta}_{11} \cdot I(\text{clarity} = \text{VS1}) + \hat{\beta}_{12} \cdot I(\text{clarity} = \text{VS2}) \\
+& + \hat{\beta}_{13} \cdot I(\text{clarity} = \text{VVS1}) + \hat{\beta}_{14} \cdot I(\text{clarity} = \text{VVS2}) + \hat{\beta}_{15} \cdot \text{table} + \hat{\beta}_{16} \cdot x
+\end{align*}
 
-The residual analysis revealed notable violations of key regression model assumptions: linearity, constant error variance (homoscedasticity), and normality of errors. The **Residuals vs Fitted Values** plot showed a clear, curved LOESS trendline with increasing spread as fitted values increased, suggesting non-linearity and heteroscedasticity. Similarly, the **Price vs Fitted Values** plot showed a generally strong positive relationship, but revealed slight curvature with growing variance at higher price levels, causing concerns about unequal error variance—indicating potential non-linearity and heteroscedasticity. The **Price vs Carat** scatterplot suggested an exponential relationship that a smile linear model fails to capture reasonably. Predictors such as color and clarity showed stratified effects on price, validating them as categorical predictors. However, the **Price vs Table** plot showed a weak and noisy association, with data points highly concentrated in a narrow range, suggesting that the table predictor may not be a strong predictor to predict price. The **Price vs x** plot also showed curvature, suggesting non-linearity.
+```{r}
+## Numerical Summary of Coefficient Estimates
+coef_table <- data.frame(
+  Term = c("(Intercept)", "carat", "colorE", "colorF", "colorG", "colorH", "colorI", "colorJ",
+           "clarityIF", "claritySI1", "claritySI2", "clarityVS1", "clarityVS2", "clarityVVS1", "clarityVVS2",
+           "table", "x"),
+  Estimate = c(-1388.839, 10945.695, -210.489, -286.752, -493.858, -993.809, -1474.570, -2387.941,
+               5665.892, 3894.266, 2926.092, 4845.059, 4528.148, 5309.983, 5234.228, -32.708, -900.270)
+)
+kable(coef_table, digits=3, caption="Numerical Summary of Coefficient Estimates")
+
+## summary(fit)
+```
+The residual analysis revealed significant violations of core regression model assumptions: linearity, constant error variance (homoscedasticity), and normality of errors. The **Residuals vs Fitted Values** plot showed a clear, curved LOESS trendline with increasing spread as fitted values increased, suggesting non-linearity and heteroscedasticity. 
+
+Similarly, the **Price vs Fitted Values** plot showed a generally strong positive relationship, but with slight curvature and growing variance at higher price levels, this causes concern about unequal error variance—indicating potential non-linearity and heteroscedasticity. The **Price vs Carat** scatterplot suggested an exponential relationship that a smile linear model fails to capture reasonably. 
+
+At first glance, categorical variables **color** and **clarity** don’t appear to be strong predictors of price due to seemingly constant spread of points across levels. However, the boxplots reveal significant stratified effects on **price**, confirming that these variables do show variation.
+
+For **color**, although the maximum prices are similar across all levels, the median prices differ, with diamonds in **color** J having higher median prices, and D showing more high outliers.
+
+Diamonds with **clarity** I1 show outliers and higher median prices, whereas those with IF appear to have more outliers and lower medians. This stratification reinforces the idea that both are valid categorical predictors for diamond price modeling.
+
+However, the **Price vs Table** plot showed a weak and noisy association, with data points highly concentrated in a narrow range, suggesting that the table predictor may not be a strong predictor to predict price. The **Price vs x** plot also showed curvature, suggesting non-linearity.
 
 Furthermore, the **histogram of standardized residuals** sharply peaked around 0 with heavy tails, and the **normal QQ-plot** confirmed it as it showed deviations at both tails, indicating violations of the normality assumption. 
 
-Despite these concerns, the model explains a substantial portion of the variance in price, with an adjusted R^2=0.9174.
+From model estimates, a diamond with **color** D, **clarity** I1, and 0 values for **table**, **x**, and **carat**, is predicted to have an average price of -\$1,388.389. Though this scenario isn’t practically meaningful, it serves as the model’s (baseline) reference level. 
+When the diamond’s **color** is E and **clarity** is IF, with the same 0 values for the continuous variables, the (estimated) average price increases to \$4,066.564, reflecting the strong positive contribution of high **clarity** IF to the overall **price**.
 
-The coefficient estimates revealed that **carat** is the strongest numerical predictor: for every additional **carat**, **price** increases by approximately \$10,945.695. Among the categorical predictors, diamonds graded as clarityIF (Internally Flawless) are associated with a \$5,665.892 higher average price than the base-level (I1), holding other variables constant. Lower **color** grades such as J result in significant price reductions, approximately \$2,387.941 less than D. 
+Moreover, a 1-gram increase in **carat**—with the same values as the previous example—raises the predicted average price by \$10,945.695 per gram of **carat**, confirming that **carat** is the most influential predictor.
 
-Interestingly, numerical predictors **table** and **x** showed negative associations with **price**. Holding other variables constant, a 1-unit increase in the **table** value is associated with an estimated \$32.708 decrease in **price**. This result is counterintuitive, as diamonds with slightly larger **table** sizes are generally more desirable for their ability to reflect light effectively, so increasing their value. Similarly, a 1-unit increase in the x-dimension corresponds to an estimated \$900.27 decrease in **price**, which is also unexpected since longer diamonds are usually more valuable. However, because **x** is strongly correlated with **carat**, this suggests potential multicollinearity—both variables may be capturing similar variance in the data. The large negative coefficient for **x** likely reflects this redundancy. So one might consider centering or removing **x** or replacing it with a composite variable like volume.
-
-
-These findings suggest that while the model identifies important trends and supports the hypothesis that clarity influences the carat-price relationship, assumption violations and multicollinearity call attention for further model refinement.
+Interestingly, **table** and **x** are both negatively associated with **price**, with coefficients of −\$32.71 and −\$900.27, respectively. This is counterintuitive as larger dimensions are generally more desirable. **x** likely reflects multicollinearity with **carat**, since both capture size-related information. This redundancy suggests the need to reconsider variable inclusion—possibility removing **x** or replacing with a composite variable like volume.
 
 ## Bibliography
