@@ -149,8 +149,6 @@ price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
        x="Clarity", y="Price")
 
 (carat_hist | table_hist | x_hist) / (price_color_box | price_clarity_box)
-sd(diamonds_cleaned$price)
-Mode(diamonds_cleaned$price)
 ```
 
 ```{r}
