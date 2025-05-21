@@ -51,6 +51,7 @@ The selected dataset was retrieved and downloaded from Kaggle, a data science pl
 \subsection*{Response Variable Summary}
 When determining the market price of diamonds, jewelers justify their valuation with reference to the physical attributes of the diamond such as its cut, carat, colour, and size. Thus, price is an appropriate selection for the response variable as it is dependent on the chosen predictors. Further, price is a continuous numerical value measured in US Dollars, making it suitable for linear regression analysis.  
 
+```{r}
 ## Numerical Summary of Response Variable
 response_numeric_sum <- data.frame(
   Statistic = c("Min.", "1st Qu.", "Median", "Mode", "Mean", "Standard Deviation", "3rd Qu.", "Max."),
