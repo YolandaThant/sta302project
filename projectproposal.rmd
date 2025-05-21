@@ -19,6 +19,7 @@ output:
 ## Hides both code & output in knitted document 
 library(tidyverse)  ## For data wrangling & plotting
 library(kableExtra)
+library(DescTools)
 library(patchwork)
 library(knitr)
 library(skimr)
@@ -64,7 +65,7 @@ kable(response_numeric_sum, caption="Numerical Summary of Response Variable")
 ```
 
 \subsection*{Predictor Variable Summaries}
-```{r}
+```{r, fig.width=15, fig.height=10}
 ## Numerical Summary of Quantitative Predictor Variables
 ## Table & Transpose
 numeric_sum <- diamonds_cleaned %>%
@@ -94,6 +95,21 @@ numeric_sum <- numeric_sum %>%
 
 kable(numeric_sum, caption = "Numerical Summary of Quantitative Predictor Variables", row.names=FALSE)
 
+
+carat_hist <- ggplot(diamonds_cleaned, aes(x=carat)) +
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of Carat", x="Carat", y="Frequency")
+
+table_hist <- ggplot(diamonds_cleaned, aes(x=table)) + 
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of Table", x="Table", y="Frequency")
+
+x_hist <- ggplot(diamonds_cleaned, aes(x=x)) + 
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of x (Length)", x="x", y="Frequency")
+
+(carat_hist | table_hist | x_hist)
+
 ##-----------------------------------------------------------------------------------------------##
 
 ## Frequency & Proportion for each 'color' level
@@ -120,21 +136,7 @@ catego_clarity_df <- data.frame(
 )
 kable(catego_clarity_df, caption="Numerical Summary of 'Clarity' Predictor")
 
-##-----------------------------------------------------------------------------------------------##
-
 ## Graphical Summary of Predictor Variables
-
-carat_hist <- ggplot(diamonds_cleaned, aes(x=carat)) +
-  geom_histogram(bins=30, fill="lightblue", color="black") +
-  labs(title="Histogram of Carat", x="Carat", y="Frequency")
-
-table_hist <- ggplot(diamonds_cleaned, aes(x=table)) + 
-  geom_histogram(bins=30, fill="lightblue", color="black") +
-  labs(title="Histogram of Table", x="Table", y="Frequency")
-
-x_hist <- ggplot(diamonds_cleaned, aes(x=x)) + 
-  geom_histogram(bins=30, fill="lightblue", color="black") +
-  labs(title="Histogram of x (Length)", x="x", y="Frequency")
 
 ## Boxplot confirms that color is not constant & shows some variation in price.
 ## Can use as predictor in modeling price.
@@ -150,7 +152,7 @@ price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
   labs(title="Boxplot of Price by Clarity",
        x="Clarity", y="Price")
 
-(carat_hist | table_hist | x_hist) / (price_color_box | price_clarity_box)
+(price_color_box | price_clarity_box)
 ```
 
 ```{r}
@@ -317,6 +319,10 @@ Interestingly, **table** and **x** are both negatively associated with **price**
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{8pt}
 
+\hangindent=0.5in Al Aswad, Ms. N. (2022, July 9). \textit{Diamonds Prices}. Kaggle. \url{https://www.kaggle.com/datasets/nancyalaswad90/diamonds-prices}  
+
+\hangindent=0.5in Diamond Prices Comparison. Loose Diamonds Search Engine. (n.d.). \url{https://www.diamondse.info/diamond-prices.asp}
+
 \hangindent=0.5in Gemological Institute of America. (n.d.). \textit{4Cs of diamond quality}. Retrieved May 20, 2025, from \url{https://4cs.gia.edu/en-us/4cs-of-diamond-quality/}
 
 \hangindent=0.5in Lee, J. A., Caudill, S. B., \& Mixon, F. G. (2014). Shine bright like a diamond: A hedonic model of grading and pricing an experience good. \textit{Applied Economics, 46}(16), 1829--1838. \url{https://doi.org/10.1080/00036846.2014.884707}
@@ -326,6 +332,8 @@ Interestingly, **table** and **x** are both negatively associated with **price**
 \hangindent=0.5in \"Ozmen, G. (2024, August 12). \textit{More than carat: A comprehensive regression analysis for diamond price prediction}. Medium. \url{https://medium.com/@gizemzmen/more-than-carat-a-comprehensive-regression-analysis-for-diamond-price-prediction-b9222f337154}
 
 \hangindent=0.5in Tiffany \& Co. (n.d.). \textit{What Is A Diamond Carat?} Retrieved May 20, 2025, from \url{https://www.tiffany.ca/engagement/the-tiffany-guide-to-diamonds/carat/}
+
+\hangindent=0.5in Wickham, H., van den Brand, T., Dunnington, D., Yutani, H., Woo, K., Wilke, C., Takahashi, K., Pedersen, T. L., Henry, L., \& Chang, W. (n.d.). \textit{Prices of Over 50,000 Round Cut Diamonds}. ggplot2. \url{https://ggplot2.tidyverse.org/reference/diamonds.html\#ref-usage}
 
 \endgroup
 ```
