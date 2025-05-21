@@ -54,7 +54,7 @@ When determining the market price of diamonds, jewelers justify their valuation 
 ```{r}
 ## Numerical Summary of Response Variable
 response_numeric_sum <- data.frame(
-  Statistic = c("Min.", "1st Qu.", "Median", "Mode", "Mean", "Standard Deviation", "3rd Qu.", "Max."),
+  Statistic = c("Minimum", "1st Quartile", "Median", "Mode", "Mean", "Standard Deviation", "3rd Quartile", "Maximum"),
   Value = c(326, 950, 2401, 605, 3933, 3989.338, 5324, 18823)
 )
 kable(response_numeric_sum, caption="Numerical Summary of Response Variable")
@@ -65,14 +65,16 @@ kable(response_numeric_sum, caption="Numerical Summary of Response Variable")
 
 \subsection*{Predictor Variable Summaries}
 ```{r}
-## Numerical Summary of Predictor Variables
+## Numerical Summary of Quantitative Predictor Variables
 ## Table & Transpose
 numeric_sum <- diamonds_cleaned %>%
   summarise(
     Min=c(min(carat), min(table), min(x)),
     Q1=c(quantile(carat, 0.25), quantile(table, 0.25), quantile(x, 0.25)),
     Median=c(median(carat), median(table), median(x)),
+    Mode=c(Mode(carat), Mode(table), Mode(x)),
     Mean=c(mean(carat), mean(table), mean(x)),
+    Standard Deviation=c(sd(carat), sd(table), st(x)),
     Q3=c(quantile(carat,0.75), quantile(table,0.75), quantile(x,0.75)),
     Max=c(max(carat), max(table), max(x))
   ) %>%
@@ -81,7 +83,7 @@ numeric_sum <- diamonds_cleaned %>%
 
 # Name cols & row labels
 colnames(numeric_sum) <- c("Carat", "Table", "x")
-numeric_sum$Statistic <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+numeric_sum$Statistic <- c("Minimum", "1st Quartile", "Median", "Mode", "Mean", "Standard Deviation", "3rd Quartile", "Maximum")
 
 ## Reorder cols
 numeric_sum <- numeric_sum[, c("Statistic", "Carat", "Table", "x")]
@@ -90,7 +92,7 @@ numeric_sum <- numeric_sum[, c("Statistic", "Carat", "Table", "x")]
 numeric_sum <- numeric_sum %>%
   mutate(across(c(Carat, Table, x), ~ round(as.numeric(.), 4)))
 
-kable(numeric_sum, caption = "Numerical Summary of Predictor Variables", row.names=FALSE)
+kable(numeric_sum, caption = "Numerical Summary of Quantitative Predictor Variables", row.names=FALSE)
 
 ##-----------------------------------------------------------------------------------------------##
 
