@@ -190,7 +190,7 @@ Similarly, the **Price vs Fitted Values** plot showed a generally strong positiv
 
 At first glance, categorical variables **color** and **clarity** don’t appear to be strong predictors of price due to seemingly constant spread of points across levels. However, the boxplots reveal significant stratified effects on **price**, confirming that these variables do show variation.
 
-For **color**, although the maximum prices are similar across all levels, the median prices differ, with diamonds in **color** J having higher median prices, and D showing more high outliers.
+For **color**, although the maximum prices are similar across all levels, the median prices differ, with diamonds in **color** J having higher median prices, and D showing higher outliers.
 
 Diamonds with **clarity** I1 show outliers and higher median prices, whereas those with IF appear to have more outliers and lower medians. This stratification reinforces the idea that both are valid categorical predictors for diamond price modeling.
 
