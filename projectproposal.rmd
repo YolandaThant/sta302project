@@ -50,10 +50,12 @@ Multiple linear regression (MLR) is a suitable method to answer our question, be
 
 \subsection*{Response Variable Summary}
 ```{r}
+The selected dataset was retrieved and downloaded from Kaggle, a data science platform, and was uploaded by a university instructor for their students to practice data analysis skills. There was no explicit research question cited on the Kaggle posting, and our research question was constructed after a careful review of the dataset and the corresponding literature surrounding diamond pricing. Further investigation of the dataset revealed that the data was originally published in the ggplot2 R package. In particular, the diamond dataset was collected and curated by Wickham et al., the creators and contributors of ggplot2, using the Loose Diamond Search Engine, which contains historical data on diamond prices and descriptions of their various physical attributes. 
+
 ## Numerical Summary of Response Variable
 response_numeric_sum <- data.frame(
-  Term = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
-  Value = c(326, 950, 2401, 3933, 5324, 18823)
+  Term = c("Min.", "1st Qu.", "Median","Mode", "Mean", "Standard Deviation", "3rd Qu.", "Max."),
+  Value = c(326, 950, 2401, 605, 3933, 3989.338, 5324, 18823)
 )
 kable(response_numeric_sum, caption="Numerical Summary of Response Variable")
 
