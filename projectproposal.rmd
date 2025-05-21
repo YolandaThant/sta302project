@@ -1,11 +1,20 @@
 ---
-Title: "Part 1: Project Proposal"
-Author: "Yolanda Thant, Kosar Hemmati, Shameiza Hussain, Ayushi Verma"
 output: 
   pdf_document:
     latex_engine: xelatex
-date: "May 15, 2025"
 ---
+
+```{=latex}
+\begin{titlepage}
+    \centering
+    {\Huge\bfseries STA302 Final Project Part 1: Project Proposal \par}
+    {\LARGE [Research Question] \par}
+    \vspace{0.3cm}
+    {\Large Yolanda Thant, Kosar Hemmati, Shameiza Hussain, Ayushi Verma\par}
+    {\Large 15 May 2025\par}
+\end{titlepage}
+```
+
 ```{r setup, include=FALSE}
 ## Hides both code & output in knitted document 
 library(tidyverse)  ## For data wrangling & plotting
@@ -29,12 +38,12 @@ write_csv(diamonds_cleaned, "./dataset/diamonds_cleaned.csv")
 ## summary(diamonds_cleaned)
 ```
 
-## Introduction
+\section*{Introduction}
 When considering a diamond’s value, many consumers rely on a grading system introduced by the Gemological Institute of America (n.d.) called the “4Cs”: carat, cut, clarity, and colour. This system was designed to help consumers of the diamond market understand the value of their purchases based on the values assigned to each of these four traits. While information about factors that influence diamond pricing are publicly available, the numeric impact of each factor is unclear (Lee et al., 2014; Mamonov & Triantoro, 2018). For instance, two diamonds of the same weight can differ vastly in price if they have different clarity levels (Tiffany & Co., n.d.), but the explanation behind this variance has not been rigorously quantified based on our literature research. Thus, our research addresses the question: To what extent do carat, colour, clarity, table size, and length predict the price of a diamond? While previous studies have conducted similar analyses (Mamonov & Triantoro, 2018; Özmen, 2024), our goal is to later refine our model in hopes of explaining more of the observed price variation in our data. Quantifying the effects that different features have on diamond prices can better inform consumers’ judgments on whether they are paying a fair price. 
 
 Multiple linear regression (MLR) is a suitable method to answer our question, because we wish to explore the association between price, a continuous response variable, with several explanatory variables simultaneously. This way, we can infer which factors are most influential on the response. MLR models the (estimated) average of the response versus given values of the predictors, which is relevant to our goal of helping consumers see where the price of their diamond lies in relation to the average price for their specific diamond profile. The focus of the model will be interpretability since our main objective is to draw conclusions about the main effects of our chosen explanatory variables, rather than stress predictive accuracy of the response.
 
-## Data Description
+\section*{Data Description}
 summarize numerically or graphically (in a single figure/table) each predictor in your dataset that
 will be used in the preliminary model, and interpret the descrip8ve sta8s8cs in the context of what the predictors
 measure and how it relates to the research ques8on
@@ -139,6 +148,7 @@ sresid_qq <- ggplot(data=data.frame(std_resid), aes(sample=std_resid)) +
        x="Theoretical Quantiles", y="Standardized Residuals")
 ```
 
+\section*{Preliminary Model Results}
 ```{r, fig.width=15, fig.height=20}
 (resid_fitted | price_fitted | price_carat) / 
   (price_color | price_color_boxplot) / 
@@ -147,7 +157,6 @@ sresid_qq <- ggplot(data=data.frame(std_resid), aes(sample=std_resid)) +
   (sresid_hist | sresid_qq)
 ```
 
-## Preliminary Model Results
 \begin{align*}
 y =\ & \beta_0 + \beta_1 \cdot \text{carat} + \beta_2 \cdot I(\text{color} = E) + \beta_3 \cdot I(\text{color} = F) + \beta_4 \cdot I(\text{color} = G) + \beta_5 \cdot I(\text{color} = H) \\
 & + \beta_6 \cdot I(\text{color} = I) + \beta_7 \cdot I(\text{color} = J) + \beta_8 \cdot I(\text{clarity} = \text{IF}) + \beta_9 \cdot I(\text{clarity} = \text{SI1}) \\
@@ -173,6 +182,8 @@ kable(coef_table, digits=3, caption="Numerical Summary of Coefficient Estimates"
 
 ## summary(fit)
 ```
+
+\section*{Residual Analysis}
 The residual analysis revealed significant violations of core regression model assumptions: linearity, constant error variance (homoscedasticity), and normality of errors. The **Residuals vs Fitted Values** plot showed a clear, curved LOESS trendline with increasing spread as fitted values increased, suggesting non-linearity and heteroscedasticity. 
 
 Similarly, the **Price vs Fitted Values** plot showed a generally strong positive relationship, but with slight curvature and growing variance at higher price levels, this causes concern about unequal error variance—indicating potential non-linearity and heteroscedasticity. The **Price vs Carat** scatterplot suggested an exponential relationship that a smile linear model fails to capture reasonably. 
@@ -187,6 +198,7 @@ However, the **Price vs Table** plot showed a weak and noisy association, with d
 
 Furthermore, the **histogram of standardized residuals** sharply peaked around 0 with heavy tails, and the **normal QQ-plot** confirmed it as it showed deviations at both tails, indicating violations of the normality assumption. 
 
+\section*{Model Discussion}
 From model estimates, a diamond with **color** D, **clarity** I1, and 0 values for **table**, **x**, and **carat**, is predicted to have an average price of -\$1,388.389. Though this scenario isn’t practically meaningful, it serves as the model’s (baseline) reference level. 
 When the diamond’s **color** is E and **clarity** is IF, with the same 0 values for the continuous variables, the (estimated) average price increases to \$4,066.564, reflecting the strong positive contribution of high **clarity** IF to the overall **price**.
 
@@ -194,5 +206,21 @@ Moreover, a 1-gram increase in **carat**—with the same values as the previous 
 
 Interestingly, **table** and **x** are both negatively associated with **price**, with coefficients of −\$32.71 and −\$900.27, respectively. This is counterintuitive as larger dimensions are generally more desirable. **x** likely reflects multicollinearity with **carat**, since both capture size-related information. This redundancy suggests the need to reconsider variable inclusion—possibility removing **x** or replacing with a composite variable like volume.
 
-## Bibliography
+```{=latex}
+\section*{Bibliography}
+\begingroup
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
 
+\hangindent=0.5in Gemological Institute of America. (n.d.). \textit{4Cs of diamond quality}. Retrieved May 20, 2025, from \url{https://4cs.gia.edu/en-us/4cs-of-diamond-quality/}
+
+\hangindent=0.5in Lee, J. A., Caudill, S. B., \& Mixon, F. G. (2014). Shine bright like a diamond: A hedonic model of grading and pricing an experience good. \textit{Applied Economics, 46}(16), 1829--1838. \url{https://doi.org/10.1080/00036846.2014.884707}
+
+\hangindent=0.5in Mamonov, S., \& Triantoro, T. (2018). Subjectivity of diamond prices in online retail: Insights from a data mining study. \textit{Journal of Theoretical and Applied Electronic Commerce Research, 13}(2), 15--28. \url{https://doi.org/10.4067/s0718-18762018000200103}
+
+\hangindent=0.5in \"Ozmen, G. (2024, August 12). \textit{More than carat: A comprehensive regression analysis for diamond price prediction}. Medium. \url{https://medium.com/@gizemzmen/more-than-carat-a-comprehensive-regression-analysis-for-diamond-price-prediction-b9222f337154}
+
+\hangindent=0.5in Tiffany \& Co. (n.d.). \textit{What Is A Diamond Carat?} Retrieved May 20, 2025, from \url{https://www.tiffany.ca/engagement/the-tiffany-guide-to-diamonds/carat/}
+
+\endgroup
+```
