@@ -18,8 +18,10 @@ output:
 ```{r setup, include=FALSE}
 ## Hides both code & output in knitted document 
 library(tidyverse)  ## For data wrangling & plotting
+library(kableExtra)
 library(patchwork)
 library(knitr)
+library(skimr)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)  ## Globally suppress all code, messages, & warnings
 ```
 
@@ -43,10 +45,109 @@ When considering a diamond’s value, many consumers rely on a grading system in
 
 Multiple linear regression (MLR) is a suitable method to answer our question, because we are exploring the association between price, a continuous response variable, with several explanatory variables simultaneously. This way, we can infer which diamond factors are the strongest predictors of price. MLR models the (estimated) average of the response versus given values of the predictors, which is relevant to our goal of helping consumers understand where the price of their diamond lies in relation to the estimated average price for their specific diamond profile. The focus of the model will be on interpretability since we are more interested in drawing conclusions about the average effects of our chosen diamond attributes on the price, rather than trying to predict exact prices of all diamonds. 
 
-\section*{Data Description}
-summarize numerically or graphically (in a single figure/table) each predictor in your dataset that
-will be used in the preliminary model, and interpret the descrip8ve sta8s8cs in the context of what the predictors
-measure and how it relates to the research ques8on
+\section*{Exploratory Data Analysis (EDA) - Data Description}
+[Description of data source]
+
+\subsection*{Response Variable Summary}
+```{r}
+## Numerical Summary of Response Variable
+response_numeric_sum <- data.frame(
+  Term = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+  Value = c(326, 950, 2401, 3933, 5324, 18823)
+)
+kable(response_numeric_sum, caption="Numerical Summary of Response Variable")
+
+## summary(diamonds_cleaned$price)
+## skim(diamonds_cleaned$price)
+```
+
+\subsection*{Predictor Variable Summaries}
+```{r}
+## Numerical Summary of Predictor Variables
+## Table & Transpose
+numeric_sum <- diamonds_cleaned %>%
+  summarise(
+    Min=c(min(carat), min(table), min(x)),
+    Q1=c(quantile(carat, 0.25), quantile(table, 0.25), quantile(x, 0.25)),
+    Median=c(median(carat), median(table), median(x)),
+    Mean=c(mean(carat), mean(table), mean(x)),
+    Q3=c(quantile(carat,0.75), quantile(table,0.75), quantile(x,0.75)),
+    Max=c(max(carat), max(table), max(x))
+  ) %>%
+  t() %>%
+  as.data.frame()
+
+# Name cols & row labels
+colnames(numeric_sum) <- c("Carat", "Table", "x")
+numeric_sum$Statistic <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+
+## Reorder cols
+numeric_sum <- numeric_sum[, c("Statistic", "Carat", "Table", "x")]
+
+# Round values
+numeric_sum <- numeric_sum %>%
+  mutate(across(c(Carat, Table, x), ~ round(as.numeric(.), 4)))
+
+kable(numeric_sum, caption = "Numerical Summary of Predictor Variables", row.names=FALSE)
+
+##-----------------------------------------------------------------------------------------------##
+
+## Frequency & Proportion for each 'color' level
+color_freq <- table(diamonds_cleaned$color)
+color_prop <- prop.table(color_freq)
+
+## Combine into a data frame
+catego_color_df <- data.frame(
+  Color=names(color_freq),
+  Frequency=as.numeric(color_freq),
+  Proportion=round(as.numeric(color_prop), 4)
+)
+kable(catego_color_df, caption="Numerical Summary of 'Color' Predictor")
+
+## Frequency & Proportion for each 'clarity' level
+clarity_freq <- table(diamonds_cleaned$clarity)
+clarity_prop <- prop.table(clarity_freq)
+
+## Combine into a data frame
+catego_clarity_df <- data.frame(
+  Clarity=names(clarity_freq),
+  Frequency=as.numeric(clarity_freq),
+  Proportion=round(as.numeric(clarity_prop), 4)
+)
+kable(catego_clarity_df, caption="Numerical Summary of 'Clarity' Predictor")
+
+##-----------------------------------------------------------------------------------------------##
+
+## Graphical Summary of Predictor Variables
+
+carat_hist <- ggplot(diamonds_cleaned, aes(x=carat)) +
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of Carat", x="Carat", y="Frequency")
+
+table_hist <- ggplot(diamonds_cleaned, aes(x=table)) + 
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of Table", x="Table", y="Frequency")
+
+x_hist <- ggplot(diamonds_cleaned, aes(x=x)) + 
+  geom_histogram(bins=30, fill="lightblue", color="black") +
+  labs(title="Histogram of x (Length)", x="x", y="Frequency")
+
+## Boxplot confirms that color is not constant & shows some variation in price.
+## Can use as predictor in modeling price.
+price_color_box <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
+  geom_boxplot(fill="lightblue", color="black") +
+  labs(title="Boxplot of Price by Color",
+       x="Color", y="Price")
+
+## Boxplot confirms that clarity does is not constant & shows meaningful variation in price.
+## Can use as predictor in modeling price.
+price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
+  geom_boxplot(fill="lightblue", color="black") +
+  labs(title="Boxplot of Price by Clarity",
+       x="Clarity", y="Price")
+
+(carat_hist | table_hist | x_hist) / (price_color_box | price_clarity_box)
+```
 
 ```{r}
 ## Preliminary (MLR) Model Setup
@@ -100,9 +201,9 @@ price_color <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
   geom_smooth(method="lm", color="blue", se=FALSE) +
   labs(title="Price vs Color")
 
-## Boxplot helps confirm that color is not constant & shows some variation in price.
+## Boxplot confirms that color is not constant & shows some variation in price.
 ## Can use as predictor in modeling price.
-price_color_boxplot <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
+price_color_box <- ggplot(data=diamonds_cleaned, aes(x=color, y=price)) +
   geom_boxplot(fill="lightblue", color="black") +
   labs(title="Boxplot of Price by Color",
        x="Color", y="Price")
@@ -114,7 +215,7 @@ price_clarity <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
 
 ## Boxplot confirms that clarity does is not constant & shows meaningful variation in price.
 ## Can use as predictor in modeling price.
-price_clarity_boxplot <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
+price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
   geom_boxplot(fill="lightblue", color="black") +
   labs(title="Boxplot of Price by Clarity",
        x="Clarity", y="Price")
@@ -151,8 +252,8 @@ sresid_qq <- ggplot(data=data.frame(std_resid), aes(sample=std_resid)) +
 \section*{Preliminary Model Results}
 ```{r, fig.width=15, fig.height=20}
 (resid_fitted | price_fitted | price_carat) / 
-  (price_color | price_color_boxplot) / 
-  (price_clarity | price_clarity_boxplot) / 
+  (price_color | price_color_box) / 
+  (price_clarity | price_clarity_box) / 
   (price_table | price_x) / 
   (sresid_hist | sresid_qq)
 ```
@@ -171,14 +272,14 @@ y =\ & \beta_0 + \beta_1 \cdot \text{carat} + \beta_2 \cdot I(\text{color} = E) 
 
 ```{r}
 ## Numerical Summary of Coefficient Estimates
-coef_table <- data.frame(
+coef_esti_numeric_sum <- data.frame(
   Term = c("(Intercept)", "carat", "colorE", "colorF", "colorG", "colorH", "colorI", "colorJ",
            "clarityIF", "claritySI1", "claritySI2", "clarityVS1", "clarityVS2", "clarityVVS1", "clarityVVS2",
            "table", "x"),
   Estimate = c(-1388.839, 10945.695, -210.489, -286.752, -493.858, -993.809, -1474.570, -2387.941,
                5665.892, 3894.266, 2926.092, 4845.059, 4528.148, 5309.983, 5234.228, -32.708, -900.270)
 )
-kable(coef_table, digits=3, caption="Numerical Summary of Coefficient Estimates")
+kable(coef_esti_numeric_sum, digits=3, caption="Numerical Summary of Coefficient Estimates")
 
 ## summary(fit)
 ```
