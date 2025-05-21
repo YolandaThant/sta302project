@@ -20,6 +20,7 @@ output:
 library(tidyverse)  ## For data wrangling & plotting
 library(kableExtra)
 library(patchwork)
+library(DescTools)
 library(knitr)
 library(skimr)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)  ## Globally suppress all code, messages, & warnings
@@ -147,6 +148,12 @@ price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
        x="Clarity", y="Price")
 
 (carat_hist | table_hist | x_hist) / (price_color_box | price_clarity_box)
+sd(diamonds_cleaned$price)
+summary(diamonds_cleaned$price)
+Mode(diamonds_cleaned$price)
+
+h <- c(5,5,5,4,4)
+Mode(h)
 ```
 
 ```{r}
