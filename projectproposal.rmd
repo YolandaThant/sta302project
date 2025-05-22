@@ -8,7 +8,7 @@ output:
 \begin{titlepage}
     \centering
     {\Huge\bfseries STA302 Final Project Part 1: Project Proposal \par}
-    {\LARGE [Research Question] \par}
+    {\LARGE What role do a diamond’s characteristics play in predicting its market value? \par}
     \vspace{0.3cm}
     {\Large Yolanda Thant, Kosar Hemmati, Shameiza Hussain, Ayushi Verma\par}
     {\Large 15 May 2025\par}
@@ -50,6 +50,10 @@ Multiple linear regression (MLR) is a suitable method to answer our question bec
 The selected dataset was retrieved and downloaded from Kaggle, a data science platform, and was uploaded by a university instructor for their students to practice data analysis skills. There was no explicit research question cited on the Kaggle posting, and our research question was constructed after a careful review of the dataset and the corresponding literature surrounding diamond pricing. Further investigation of the dataset revealed that the data was originally published in the ggplot2 R package. In particular, the diamond dataset was collected and curated by Wickham et al., the creators and contributors of ggplot2, using the Loose Diamond Search Engine, which contains historical data on diamond prices and descriptions of their various physical attributes. 
 
 \subsection*{Response Variable Summary}
+**Response** 
+
+- Large spread, heavy right-skew  
+- Indicates “rarity” of premium diamonds
 ```{r}
 ## Numerical Summary of Response Variable
 response_numeric_sum <- data.frame(
@@ -152,6 +156,39 @@ price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
 
 (price_color_box | price_clarity_box)
 ```
+
+```{r include-images, fig.align='center', out.width='40%'}
+## Pictures for color & clarity gradings
+knitr::include_graphics(c("./color_grading.png", "./clarity_grading.png"))
+```
+
+**x - length (in mm) of diamond**
+
+- Large spread, slight right-skew
+- Overestimated spread due to nonsensical zero entries (requires data cleaning)
+- Rarity of longer diamonds suggest relationship with price
+
+**table - width of diamond’s top surface as % of total width**  
+
+- Large spread due to heavy right tail, mild right-skew
+- Rarity of high table % suggest relationship with price
+
+**carat – diamond weight (1 carat = 0.2 grams)** 
+
+- Large spread, heavy right-skew mirroring price histogram
+- Rarity of high carat and histogram similarity suggest carat to be the strongest predictor of price
+
+**color - grading from best (D) to worst (J) (Diamond Color Scale, n.d.)** 
+
+- Frequency peak around medium grade (G)
+- Each grading has heavy right-skew
+- Changes in median price and number of outliers among color grades suggests relationship with price
+
+**clarity - grading from best (IF) to worst (I1) (Diamond Color Scale, n.d.)** 
+
+- Frequency peak around medium grades (VS2 & SI1)
+- Each grading has heavy right-skew
+- Clarity decline corresponds to lower medians suggesting relationship with price
 
 ```{r}
 ## Preliminary (MLR) Model Setup
