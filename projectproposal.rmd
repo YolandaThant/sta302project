@@ -10,8 +10,8 @@ output:
     {\Huge\bfseries STA302 Final Project Part 1: Project Proposal \par}
     {\LARGE What role do a diamond’s characteristics play in predicting its market value? \par}
     \vspace{0.3cm}
-    {\Large Yolanda Thant, Kosar Hemmati, Shameiza Hussain, Ayushi Verma\par}
-    {\Large 15 May 2025\par}
+    {\large Yolanda Thant, Kosar Hemmati, Shameiza Hussain, Ayushi Verma\par}
+    {\large 15 May 2025\par}
 \end{titlepage}
 ```
 
@@ -47,12 +47,14 @@ When considering a diamond’s value, many consumers rely on a grading system in
 Multiple linear regression (MLR) is a suitable method to answer our question because we are exploring the association between price, a continuous response variable, with several explanatory variables simultaneously. This way, we can infer which diamond factors are the strongest predictors of price. MLR models the (estimated) average of the response versus given values of the predictors, which is relevant to our goal of helping consumers understand where the price of their diamond lies in relation to the estimated average price for their specific diamond profile. The focus of the model will be on interpretability since we are more interested in drawing conclusions about the average effects of our chosen diamond attributes on the price, rather than trying to predict exact prices of all diamonds.
 
 \section*{Exploratory Data Analysis (EDA)}
-The selected dataset was retrieved and downloaded from Kaggle, a data science platform, and was uploaded by a university instructor for their students to practice data analysis skills. There was no explicit research question cited on the Kaggle posting, and our research question was constructed after a careful review of the dataset and the corresponding literature surrounding diamond pricing. Further investigation of the dataset revealed that the data was originally published in the ggplot2 R package. In particular, the diamond dataset was collected and curated by Wickham et al., the creators and contributors of ggplot2, using the Loose Diamond Search Engine, which contains historical data on diamond prices and descriptions of their various physical attributes. 
+The selected dataset was retrieved and downloaded from Kaggle (Al Aswad, 2022). There was no explicit research purpose linked to the dataset, and our research question was constructed after a careful review of the variables and corresponding literature surrounding diamond pricing. Further investigation of the dataset revealed that it was originally published in the ggplot2 R package (Wickham et al., n.d.). In particular, the diamond dataset was curated by the contributors of ggplot2, using the Loose Diamond Search Engine (n.d.), which contains historical data on diamond prices and their physical attributes.
 
 \subsection*{Response Variable Summary}
+Jewelers justify their valuation of diamonds using physical attributes such as cut, carat, colour, and size. Thus, price is an appropriate response variable as it is dependent on the chosen predictors. Further, price is a continuous numerical value measured in US Dollars, making it suitable for linear regression analysis.
+
 **Response** 
 
-- Large spread, heavy right-skew  
+- Large spread, heavy right-skew
 - Indicates “rarity” of premium diamonds
 ```{r}
 ## Numerical Summary of Response Variable
