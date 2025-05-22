@@ -52,8 +52,6 @@ The selected dataset was retrieved and downloaded from Kaggle (Al Aswad, 2022). 
 \subsection*{Response Variable Summary}
 Jewelers justify their valuation of diamonds using physical attributes such as cut, carat, colour, and size. Thus, price is an appropriate response variable as it is dependent on the chosen predictors. Further, price is a continuous numerical value measured in US Dollars, making it suitable for linear regression analysis.
 
-**Response** 
-
 - Large spread, heavy right-skew
 - Indicates “rarity” of premium diamonds
 ```{r}
@@ -159,26 +157,21 @@ price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
 (price_color_box | price_clarity_box)
 ```
 
-```{r include-images, fig.align='center', out.width='40%', **fig.cap="Colour (Diamond Color Scale, n.d.) and Clarity (Diamond Clarity Guide, n.d.) Gradings for Diamonds"**}
-## Pictures for color & clarity gradings
-knitr::include_graphics(c("./color_grading.png", "./clarity_grading.png"))
-```
+**Carat – diamond weight (1 carat = 0.2 grams)** 
 
-**x - length (in mm) of diamond**
-
-- Large spread, slight right-skew
-- Overestimated spread due to nonsensical zero entries (requires data cleaning)
-- Rarity of longer diamonds suggest relationship with price
+- Large spread, heavy right-skew mirroring price histogram
+- Rarity of high carat and histogram similarity suggest carat to be the strongest predictor of price
 
 **Table - width of diamond’s top surface as % of total width**  
 
 - Large spread due to heavy right tail, mild right-skew
 - Rarity of high table % suggest relationship with price
 
-**Carat – diamond weight (1 carat = 0.2 grams)** 
+**x - length (in mm) of diamond**
 
-- Large spread, heavy right-skew mirroring price histogram
-- Rarity of high carat and histogram similarity suggest carat to be the strongest predictor of price
+- Large spread, slight right-skew
+- Overestimated spread due to nonsensical zero entries (requires data cleaning)
+- Rarity of longer diamonds suggest relationship with price
 
 **Color - grading from best (D) to worst (J) (Diamond Color Scale, n.d.)** 
 
@@ -191,6 +184,12 @@ knitr::include_graphics(c("./color_grading.png", "./clarity_grading.png"))
 - Frequency peak around medium grades (VS2 & SI1)
 - Each grading has heavy right-skew
 - Clarity decline corresponds to lower medians suggesting relationship with price
+
+```{r include-images, fig.align='center', out.width='37%', fig.cap='\\small Colour (Diamond Color Scale, n.d.) and Clarity (Diamond Clarity Guide, n.d.) Gradings for Diamonds'}
+## Pictures for color & clarity gradings
+knitr::include_graphics("./color_grading.png")
+knitr::include_graphics("./clarity_grading.png")
+```
 
 ```{r}
 ## Preliminary (MLR) Model Setup
