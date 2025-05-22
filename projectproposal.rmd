@@ -159,7 +159,7 @@ price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=price)) +
 (price_color_box | price_clarity_box)
 ```
 
-```{r include-images, fig.align='center', out.width='40%'}
+```{r include-images, fig.align='center', out.width='40%', **fig.cap="Colour (Diamond Color Scale, n.d.) and Clarity (Diamond Clarity Guide, n.d.) Gradings for Diamonds"**}
 ## Pictures for color & clarity gradings
 knitr::include_graphics(c("./color_grading.png", "./clarity_grading.png"))
 ```
@@ -170,23 +170,23 @@ knitr::include_graphics(c("./color_grading.png", "./clarity_grading.png"))
 - Overestimated spread due to nonsensical zero entries (requires data cleaning)
 - Rarity of longer diamonds suggest relationship with price
 
-**table - width of diamond’s top surface as % of total width**  
+**Table - width of diamond’s top surface as % of total width**  
 
 - Large spread due to heavy right tail, mild right-skew
 - Rarity of high table % suggest relationship with price
 
-**carat – diamond weight (1 carat = 0.2 grams)** 
+**Carat – diamond weight (1 carat = 0.2 grams)** 
 
 - Large spread, heavy right-skew mirroring price histogram
 - Rarity of high carat and histogram similarity suggest carat to be the strongest predictor of price
 
-**color - grading from best (D) to worst (J) (Diamond Color Scale, n.d.)** 
+**Color - grading from best (D) to worst (J) (Diamond Color Scale, n.d.)** 
 
 - Frequency peak around medium grade (G)
 - Each grading has heavy right-skew
 - Changes in median price and number of outliers among color grades suggests relationship with price
 
-**clarity - grading from best (IF) to worst (I1) (Diamond Color Scale, n.d.)** 
+**Clarity - grading from best (IF) to worst (I1) (Diamond Clarity Guide, n.d.)** 
 
 - Frequency peak around medium grades (VS2 & SI1)
 - Each grading has heavy right-skew
