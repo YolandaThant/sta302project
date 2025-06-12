@@ -1,0 +1,444 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE}
+## Hides both code & output in knitted document 
+library(tidyverse)  ## For data wrangling & plotting
+library(kableExtra)
+library(DescTools)
+library(patchwork)
+library(knitr)
+library(kableExtra)
+library(skimr)
+library(broom)
+library(MASS)   ## For Box-Cox Transformation Method
+library(mgcv)   ## To fit GAM
+library(car)    ## For VIF
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)  ## Globally suppress all code, messages, & warnings
+```
+
+```{r}
+## load original diamonds dataset
+diamonds <- read_csv("./dataset/original_diamonds_dataset.csv")
+## list.files("./dataset")
+## getwd()
+```
+
+```{r}
+## Data Cleaning: Rename x & y. Remove predictor variables we don't need: 1st col, cut, depth, table, z
+diamonds_cleaned <- diamonds %>%
+  rename(length = x, width = y) %>%
+  dplyr::select(-...1, -cut, -depth, -table, -z) %>%
+  mutate(
+    color = as.factor(color),
+    clarity = as.factor(clarity),
+    width_transformed = log1p(width),
+  )
+
+## head(diamonds_cleaned)
+write_csv(diamonds_cleaned, "./dataset/diamonds_cleaned.csv")
+## summary(diamonds_cleaned)
+```
+
+\section*{Section 1: Introduction}
+
+```{r}
+## Preliminary (MLR) Model Setup
+fit <- lm(price ~ carat + color + clarity + length + width, data=diamonds_cleaned)
+## summary(fit)
+```
+
+\section*{Section 2: Data description}
+Scatterplot Matrix
+```{r}
+## Scatterplot Matrix
+plot(diamonds_cleaned[,c("price", "carat", "color", "clarity", "length", "width")])
+```
+
+\section*{Section 3: Primary model results and diagnostics}
+
+
+\section*{Section 4: Model Selection}
+```{r}
+## Box-Cox Transformation Method
+box_cox <- boxcox(fit)
+lambda <- box_cox$x[which.max(box_cox$y)]     ## lambda = 0.1414141   
+
+## Define response variable
+y <- diamonds_cleaned$price
+
+## Geometric Mean
+geom_mean <- exp(mean(log(y)))        ## Didn't use prod(y)^(1/n) bc of dataset overflow
+
+## Transform & Fit
+y_transformed <- geom_mean^(1-lambda)*(y^lambda-1) / lambda
+
+transformed_fit <- lm(y_transformed ~ log(carat) + color + clarity + length + width_transformed, data=diamonds_cleaned)
+## transformed_fit
+## summary(transformed_fit)
+```
+
+```{r}
+## Generalized Additive Model (GAM)
+gam_fit <- gam(y_transformed ~ s(carat) + color + clarity + s(length) + s(width_transformed),
+               data = diamonds_cleaned)
+## summary(gam_fit)
+
+## Initial GAM Residual Plot
+resid_fit_gam <- data.frame(Fitted = fitted(gam_fit), Residuals = resid(gam_fit))
+resid_fitted_gam <- ggplot(data=resid_fit_gam, aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  labs(title = "GAM: Residuals vs Fitted Values")
+
+## Estimate variance of residuals to model heteroscedasticity
+gam_resid <- resid(gam_fit)^2
+var_model_gam <- lm(log(gam_resid) ~ fitted(gam_fit))
+predicted_var <- exp(fitted(var_model_gam))
+
+## Calculate weights (inverse variance)
+weights_gam <- 1 / predicted_var
+
+## WLS-GAM: Refit GAM with weights. WLS -> Weighted Least Squares Regression
+gam_fit_weighted <- gam(y_transformed ~ s(carat) + color + clarity + s(length) + s(width_transformed), 
+                        data=diamonds_cleaned, weights = weights_gam)
+## summary(gam_fit_weighted)
+
+## Plot residuals of WLS-weighted GAM
+resid_fit_gam_weighted <- data.frame(
+  Fitted = fitted(gam_fit_weighted),
+  Residuals = resid(gam_fit_weighted)
+)
+resid_fitted_gam_weighted <- ggplot(data=resid_fit_gam_weighted, aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  labs(title = "WLS-GAM: Residuals vs Fitted Values")
+
+(resid_fitted_gam | resid_fitted_gam_weighted)
+```
+
+
+```{r}
+## Leverage Point(s)
+mod.hii <- hatvalues(transformed_fit)
+plot(mod.hii, type="h", ylab="hii", main="Levarage Points")
+## Define the cutoff for leverage points
+cutoff.leveragepoints <- 2*(17+1)/nrow(diamonds_cleaned)
+cutoff.leveragepoints.bis <- 3*(17+1)/nrow(diamonds_cleaned)
+abline(h=cutoff.leveragepoints,col="red")
+abline(h=cutoff.leveragepoints.bis,col="blue")
+abline(h=0.5,col="green")
+## mod.hii
+## length(which(mod.hii>cutoff.leveragepoints))
+## 1822 entries
+
+# Outlier(s)
+transformed_sresid <- rstandard(transformed_fit)
+
+# Plot standardized residuals
+plot(transformed_sresid, type = "h",
+     main = "Standardized Residuals",
+     ylab = "Standardized Residuals")
+abline(h = 2, col = "red")
+abline(h = -2, col = "red")
+
+# Identify points where |standardized residual| > 2
+## length(which(abs(transformed_sresid) > 2))
+## 2229 entries
+
+## Influential Point(s) via Cook's Distance
+cook_dii <- cooks.distance(transformed_fit)
+
+# Plot
+plot(cook_dii, type = "h", ylab = "Cook's Distance", main = "Cook's Distance")
+cutoff_dii <- qf(0.5, df1 = 17, df2 = nrow(diamonds_cleaned) - 17)
+abline(h = cutoff_dii, col = "red")                # F-distribution cutoff (mild)
+abline(h = 1, col = "blue")                        # Heuristic flag
+abline(h = 4 / nrow(diamonds_cleaned), col = "green")  # Common threshold for large n
+
+# Influential points: using 4/n cutoff
+## length(which(cook_dii > (4 / nrow(diamonds_cleaned))))
+## 2502 entries
+
+
+# Influential points via DFFITS
+dffits_vals <- dffits(transformed_fit)
+
+# Plot
+plot(dffits_vals, type = "h", ylab = "DFFITS", main = "DFFITS")
+cutoff_dffits <- 2 * sqrt(17 / nrow(diamonds_cleaned))
+abline(h = cutoff_dffits, col = "red")
+abline(h = -cutoff_dffits, col = "red")
+
+# Influential points: using DFFITS cutoff
+## length(which(abs(dffits_vals) > cutoff_dffits))
+## 2502 entries
+```
+
+```{r}
+high_lev_pts <- which(mod.hii > cutoff.leveragepoints)
+outliers <- which(abs(transformed_sresid) > 2)
+influential <- which(cook_dii > (4 / nrow(diamonds_cleaned)))
+
+# Intersection: All three
+intersect_all <- Reduce(intersect, list(high_lev_pts, outliers, influential))
+
+## length(intersect_all)  # Number of points flagged by all three
+## 355 pts
+
+## length(intersect(high_lev_pts, influential))    ## 794 pts
+## length(intersect(outliers, influential))        ## 1686 pts
+```
+
+
+```{r}
+## Variable Selection / Model Comparison
+## Full Model
+model_1 <- lm(price ~ carat + cut + color + clarity + depth + table + x + y + z, data=diamonds)
+
+## Preliminary Model
+model_2 <- lm(price ~ carat + color + clarity + length + width, data=diamonds_cleaned)
+
+## Model 3
+model_3 <- lm(price ~ carat + cut + color + x + y + z, data=diamonds)
+
+## Transformed Model
+model_4 <- transformed_fit
+
+model_selection <- data.frame(
+  Model = c(1, 2, 3, 4), 
+  "Adj_R^2" = round(c(summary(model_1)$adj.r.squared, summary(model_2)$adj.r.squared, 
+                   summary(model_3)$adj.r.squared, summary(model_4)$adj.r.squared), 4),
+  AIC = c(AIC(model_1), AIC(model_2), AIC(model_3), AIC(model_4)),
+  BIC = c(BIC(model_1), BIC(model_2), BIC(model_3), BIC(model_4))
+)
+kable(model_selection, caption="Model Selection Table")
+```
+
+Variation Inflation Factor (VIF)
+```{r}
+## Variation Inflation Factor (VIF)
+vif(transformed_fit)
+
+## summary(transformed_fit)$r.squared
+## summary(transformed_fit)$adj.r.squared
+## AIC(transformed_fit)
+## BIC(transformed_fit)
+
+
+## summary(fit)$r.squared
+## summary(fit)$adj.r.squared
+## AIC(fit)
+## BIC(fit)
+```
+
+Variable Selection
+```{r}
+## Variable Selection
+new_transformed_fit <- step(transformed_fit, direction = c("both"))
+summary(new_transformed_fit)
+```
+
+\section*{Section 5: Final Model Inference \& Results}
+
+Final Model Summary with Confidence Intervals
+```{r}
+# Confidence Intervals
+confint(transformed_fit, level=0.95)
+## summary(transformed_fit)
+
+# Combine final model into a summary table
+final_model_summary <- tidy(transformed_fit, conf.int = TRUE) %>%
+  rename(
+    "Term" = term,
+    "Estimate" = estimate,
+    "Std. Error" = std.error,
+    "t value" = statistic,
+    "p-value" = p.value,
+    "CI Lower" = conf.low,
+    "CI Upper" = conf.high
+  ) %>%
+  mutate(
+    Estimate = round(`Estimate`, 3),
+    `Std. Error` = round(`Std. Error`, 3),
+    `t value` = round(`t value`, 3),
+    `p-value` = ifelse(`p-value` <2e-16, "<2e-16", formatC(`p-value`, format = "e", digits = 2)),
+    `CI Lower` = round(`CI Lower`, 3),
+    `CI Upper` = round(`CI Upper`, 3)
+  )
+
+kable(final_model_summary, caption = "Final Model Summary with Confidence Intervals")
+```
+Model Performance Summary
+```{r}
+model_perf <- data.frame(
+  Term = c("Residual Std. Error", "Residual Std. Error df", 
+             "Multiple R^2", "Adjusted R^2",
+             "F-statistic", "F-test df", "p-value"),
+  Value = c("361.5", "53,926", 
+            "0.9788586", "0.9788524",
+            "1.561e+05", "(16, 53,926)", "< 2.2e-16")
+)
+
+kable(model_perf, caption = "Model Performance Summary")
+```
+
+Model Validation: 80% Training Set & 20% Testing Set
+
+```{r}
+compute_test_mse <- function(formula, data, lambda = NULL, transform_response = FALSE) {
+  set.seed(123)  # for reproducibility
+  n <- nrow(data)
+  train_idx <- sample(seq_len(n), size = 0.8 * n)
+  train <- data[train_idx, ]
+  test <- data[-train_idx, ]
+  
+  if (transform_response && !is.null(lambda)) {
+    gm <- exp(mean(log(train$price)))
+    train$y_trans <- gm^(1 - lambda) * (train$price^lambda - 1) / lambda
+    test$y_trans <- gm^(1 - lambda) * (test$price^lambda - 1) / lambda
+    model <- lm(y_trans ~ ., data = train[, c(all.vars(formula), "y_trans")])
+    preds <- predict(model, newdata = test)
+    mse <- mean((test$y_trans - preds)^2)
+  } else {
+    model <- lm(formula, data = train)
+    preds <- predict(model, newdata = test)
+    mse <- mean((test$price - preds)^2)
+  }
+  
+  return(mse)
+}
+
+## Model 1: Full Model
+mse_model_1 <- compute_test_mse(
+  price ~ carat + cut + color + clarity + depth + table + x + y + z,
+  data = diamonds
+)
+
+## Model 2: Preliminary Model
+mse_model_2 <- compute_test_mse(
+  price ~ carat + color + clarity + length + width,
+  data = diamonds_cleaned
+)
+## Model 3
+mse_model_3 <- compute_test_mse(
+  price ~ carat + cut + color + x + y + z,
+  data = diamonds
+)
+
+## Model 4: Final Transformed Model
+mse_model_4 <- compute_test_mse(
+  ~ log(carat) + color + clarity + length + width_transformed,
+  data = diamonds_cleaned,
+  lambda = 0.1414141,
+  transform_response = TRUE
+)
+
+validation_results <- data.frame(
+  Model = c(
+    "Model 1: Full Model (carat + cut + color + clarity + depth + table + x + y + z)",
+    "Model 2: Preliminary Model (carat + color + clarity + length + width)",
+    "Model 3: (carat + cut + color + x + y + z)",
+    "Model 4: Final Transformed Model (log(carat), width_transformed, Box-Cox)"
+  ),
+  Test_MSE = round(c(mse_model_1, mse_model_2, mse_model_3, mse_model_4), 2)
+)
+
+kable(validation_results, caption = "Model Validation: Test Set MSE Comparison")
+```
+
+```{r}
+## Transformed Response vs Fitted Values Plot
+
+## Use fitted values from the WLS-GAM model
+price_fitted <- ggplot(data = diamonds_cleaned, aes(x = fitted(gam_fit_weighted), y = y_transformed)) +
+  geom_point(alpha = 0.3) +
+  geom_abline(color = "blue") +
+  labs(x = "Fitted Values", y = "Transformed Price",
+       title = "WLS-GAM: Transformed Price vs Fitted Values")
+## price_fitted
+```
+
+```{r}
+## Transformed Response vs Individual Predictor Values Plot
+price_carat <- ggplot(data=diamonds_cleaned, aes(x=log(carat), y=y_transformed)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Carat") +
+  coord_cartesian(ylim = c(0, 20000))
+
+price_color <- ggplot(data=diamonds_cleaned, aes(x=color, y=y_transformed)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Color")
+
+price_clarity <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=y_transformed)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Clarity")
+
+price_length <- ggplot(data=diamonds_cleaned, aes(x=length, y=y_transformed)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Length")
+
+price_width <- ggplot(data=diamonds_cleaned, aes(x=width_transformed, y=y_transformed)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method="lm", color="blue", se=FALSE) +
+  labs(title="Price vs Width") + 
+  coord_cartesian(ylim = c(0, 20000))
+
+## (price_color | price_clarity)
+## (price_carat | price_length | price_width)
+```
+
+
+```{r}
+# Approximate Histogram of Standardized Residuals for WLS-GAM.
+## rstandard() only works with lm, not gam objects.
+std_resid_gam <- resid(gam_fit_weighted, type = "deviance") / sqrt(gam_fit_weighted$scale)
+sresid_hist <- ggplot(data=data.frame(std_resid = std_resid_gam), aes(x = std_resid)) +
+  geom_histogram(bins = 30, fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Standardized Residuals (WLS-GAM)",
+       x = "Standardized Residuals", y = "Frequency")
+## sresid_hist
+```
+
+```{r}
+## Normal QQ-Plot of Scaled Deviance Residuals (Approximate)
+sresid_qq <- ggplot(data=data.frame(std_resid = std_resid_gam), aes(sample = std_resid)) +
+  stat_qq(alpha = 0.2) +
+  stat_qq_line(color = "red", linetype = "dashed") +
+  labs(title = "Normal QQ-Plot of Scaled Deviance Residuals (WLS-GAM)",
+       x = "Theoretical Quantiles", y = "Scaled Deviance Residuals")
+## sresid_qq
+```
+
+```{r}
+## Boxplot confirms that color is not constant & shows some variation in price.
+## Can use as predictor in modeling price.
+price_color_box <- ggplot(data=diamonds_cleaned, aes(x=color, y=y_transformed)) +
+  geom_boxplot(fill="lightblue", color="black") +
+  labs(title="Boxplot of Price by Color",
+       x="Color", y="Price")
+
+## Boxplot confirms that clarity does is not constant & shows meaningful variation in price.
+## Can use as predictor in modeling price.
+price_clarity_box <- ggplot(data=diamonds_cleaned, aes(x=clarity, y=y_transformed)) +
+  geom_boxplot(fill="lightblue", color="black") +
+  labs(title="Boxplot of Price by Clarity",
+       x="Clarity", y="Price")
+
+(price_color_box | price_clarity_box)
+```
+
+```{r, fig.width=15, fig.height=17}
+(resid_fitted_gam_weighted | price_fitted | price_carat) / 
+  (price_color | price_clarity | price_length) / 
+  (price_width | sresid_hist | sresid_qq)
+```
