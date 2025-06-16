@@ -16,6 +16,7 @@ library(broom)
 library(MASS)   ## For Box-Cox Transformation Method
 library(mgcv)   ## To fit GAM
 library(car)    ## For VIF
+library(boot)   ## FOr 10-Fold Cross-Validation
 
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)  ## Globally suppress all code, messages, & warnings
 ```
@@ -288,9 +289,9 @@ model_perf <- data.frame(
 kable(model_perf, caption = "Model Performance Summary")
 ```
 
-Model Validation: 80% Training Set & 20% Testing Set
+Model Validation: 80-20 Training -Testing Set & K-Fold Cross-Validation Selection
 
-```{r}
+```{r, fig.width=9, fig.height=6}
 compute_test_mse <- function(formula, data, lambda = NULL, transform_response = FALSE) {
   set.seed(123)  # for reproducibility
   n <- nrow(data)
@@ -310,7 +311,6 @@ compute_test_mse <- function(formula, data, lambda = NULL, transform_response = 
     preds <- predict(model, newdata = test)
     mse <- mean((test$price - preds)^2)
   }
-  
   return(mse)
 }
 
@@ -333,7 +333,7 @@ mse_model_3 <- compute_test_mse(
 
 ## Model 4: Final Transformed Model
 mse_model_4 <- compute_test_mse(
-  ~ log(carat) + color + clarity + length + width_transformed,
+  y_trans ~ log(carat) + color + clarity + length + width_transformed,
   data = diamonds_cleaned,
   lambda = 0.1414141,
   transform_response = TRUE
@@ -349,7 +349,42 @@ validation_results <- data.frame(
   Test_MSE = round(c(mse_model_1, mse_model_2, mse_model_3, mse_model_4), 2)
 )
 
-kable(validation_results, caption = "Model Validation: Test Set MSE Comparison")
+## 10-Fold Cross-Validation
+## Transformed model helper function - fit transformed response via Box-Cox lambda & return CV error
+cv_mse_transformed <- function(data, lambda, K = 10) {
+  gm <- exp(mean(log(data$price)))
+  data$y_trans <- gm^(1 - lambda) * (data$price^lambda - 1) / lambda
+  formula_trans <- y_trans ~ log(carat) + color + clarity + length + width_transformed
+  glm_fit <- glm(formula_trans, data=data)
+  cv.glm(data, glm_fit, K = K)$delta[1]   ## delta[1] Estimated CV MSE
+}
+
+cv_mse_model_1 <- cv.glm(diamonds, glm(price ~ carat + cut + color + clarity + depth + table + x + y + z, data=diamonds), K = 10)$delta[1]
+cv_mse_model_2 <- cv.glm(diamonds_cleaned, glm(price ~ carat + color + clarity + length + width, data=diamonds_cleaned), K = 10)$delta[1]
+cv_mse_model_3 <- cv.glm(diamonds, glm(price ~ carat + cut + color + x + y + z, data=diamonds), K = 10)$delta[1]
+cv_mse_model_4 <- cv_mse_transformed(diamonds_cleaned, lambda = 0.1414141, K = 10)
+
+cv_results <- data.frame(
+  Model = c("Model 1: Full Model (carat + cut + color + clarity + depth + table + x + y + z)",
+    "Model 2: Preliminary Model (carat + color + clarity + length + width)",
+    "Model 3: (carat + cut + color + x + y + z)",
+    "Model 4: Final Transformed Model (log(carat), width_transformed, Box-Cox)"
+    
+  ),
+  CV_MSE = round(c(cv_mse_model_1, cv_mse_model_2, cv_mse_model_3, cv_mse_model_4), 2)
+)
+
+combined_mse <- merge(validation_results, cv_results, by = "Model")
+kable(combined_mse, caption = "Comparison of Test Set and Cross-Validation MSE")
+
+
+combined_long <- combined_mse %>%
+  pivot_longer(cols = c(Test_MSE, CV_MSE), names_to = "Metric", values_to = "MSE")
+
+ggplot(combined_long, aes(x = reorder(Model, MSE), y = MSE, fill = Metric)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(title = "Test Set vs Cross-Validation MSE", x = "Model", y = "MSE")
 ```
 
 ```{r}
