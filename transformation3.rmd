@@ -289,7 +289,7 @@ model_perf <- data.frame(
 kable(model_perf, caption = "Model Performance Summary")
 ```
 
-Model Validation: 80-20 Training -Testing Set & K-Fold Cross-Validation Selection
+Model Validation: 80/20 Training -Testing Set & K-Fold Cross-Validation Selection
 
 ```{r, fig.width=9, fig.height=6}
 compute_test_mse <- function(formula, data, lambda = NULL, transform_response = FALSE) {
