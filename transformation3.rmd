@@ -126,7 +126,7 @@ resid_fitted_gam_weighted <- ggplot(data=resid_fit_gam_weighted, aes(x = Fitted,
 ```{r}
 ## Leverage Point(s)
 mod.hii <- hatvalues(transformed_fit)
-plot(mod.hii, type="h", ylab="hii", main="Levarage Points")
+plot(mod.hii, type="h", ylab="hii", main="Leverage Points")
 ## Define the cutoff for leverage points
 cutoff.leveragepoints <- 2*(17+1)/nrow(diamonds_cleaned)
 cutoff.leveragepoints.bis <- 3*(17+1)/nrow(diamonds_cleaned)
@@ -135,7 +135,7 @@ abline(h=cutoff.leveragepoints.bis,col="blue")
 abline(h=0.5,col="green")
 ## mod.hii
 ## length(which(mod.hii>cutoff.leveragepoints))
-## 1822 entries
+## 1822 leverage points
 
 # Outlier(s)
 transformed_sresid <- rstandard(transformed_fit)
@@ -144,12 +144,12 @@ transformed_sresid <- rstandard(transformed_fit)
 plot(transformed_sresid, type = "h",
      main = "Standardized Residuals",
      ylab = "Standardized Residuals")
-abline(h = 2, col = "red")
-abline(h = -2, col = "red")
+abline(h = 4, col = "red")
+abline(h = -4, col = "red")
 
-# Identify points where |standardized residual| > 2
-## length(which(abs(transformed_sresid) > 2))
-## 2229 entries
+# Identify points where |standardized residual| > 4
+## length(which(abs(transformed_sresid) > 4))
+## 103 outliers
 
 ## Influential Point(s) via Cook's Distance
 cook_dii <- cooks.distance(transformed_fit)
@@ -163,7 +163,7 @@ abline(h = 4 / nrow(diamonds_cleaned), col = "green")  # Common threshold for la
 
 # Influential points: using 4/n cutoff
 ## length(which(cook_dii > (4 / nrow(diamonds_cleaned))))
-## 2502 entries
+## 2502 influential points
 
 
 # Influential points via DFFITS
@@ -182,17 +182,17 @@ abline(h = -cutoff_dffits, col = "red")
 
 ```{r}
 high_lev_pts <- which(mod.hii > cutoff.leveragepoints)
-outliers <- which(abs(transformed_sresid) > 2)
+outliers <- which(abs(transformed_sresid) > 4)
 influential <- which(cook_dii > (4 / nrow(diamonds_cleaned)))
 
 # Intersection: All three
 intersect_all <- Reduce(intersect, list(high_lev_pts, outliers, influential))
 
 ## length(intersect_all)  # Number of points flagged by all three
-## 355 pts
+## 76 points
 
-## length(intersect(high_lev_pts, influential))    ## 794 pts
-## length(intersect(outliers, influential))        ## 1686 pts
+## length(intersect(high_lev_pts, influential))    ## 794 points
+## length(intersect(outliers, influential))        ## 103 points
 ```
 
 
